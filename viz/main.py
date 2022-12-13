@@ -35,29 +35,10 @@ def drawEyes(params):
 
 def drawEyeLid(img, params, left = False):
     r, theta, arousal, valence = params
-
-    if not left:
-        valence = -valence
-
-    pts = np.array(
-        [
-            [-10 * dim, -10 * dim],
-            [10 * dim, -dim],
-            [arousal + dim * np.cos(valence), arousal + dim  * np.sin(valence)],
-            [arousal - dim * np.cos(valence), arousal - dim  * np.sin(valence)],
-        ], int
-    )
-    if valence < 0:
-        pts = np.array(
-        [
-            [-10 * dim, -10 * dim],
-            [arousal - dim * np.cos(valence), arousal - dim  * np.sin(valence)],
-            [arousal + dim * np.cos(valence), arousal + dim  * np.sin(valence)],
-            [10 * dim, -dim],
-        ], int
-    )
-
-    cv2.fillPoly(img, np.int32([pts]), (0, 0, 0))
+    if left:
+        cv2.circle(img, (dim//2 - int(valence), int(arousal) * 4), dim, (0, 0, 0), -1)
+    else:
+        cv2.circle(img, (dim//2 + int(valence), int(arousal) * 4), dim, (0, 0, 0), -1)
     return img
 
     
@@ -84,8 +65,8 @@ def drawLoc(event,x,y,flags,param):
             params[0] = min(r, dim//2 - eyeRad)
             params[1] = theta
         if mode == 'valencearousal':
-            params[2] = (y )
-            params[3] = ((x - dim//2) / dim) *  np.pi
+            params[2] = (y - dim//2)
+            params[3] = x - dim//2
         
 
 cv2.namedWindow('image')
