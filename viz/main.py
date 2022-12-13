@@ -5,8 +5,9 @@ ix, iy = -1,-1
 
 eyeRad = 85
 dim = 512
-def drawSingleEye(img, params):
-    r, theta = params
+
+def drawPupil(img, params):
+    r, theta, arousal, valence = params
 
     eyemask = img.copy()
     cv2.circle(eyemask, (dim//2, dim//2), dim//2, (0, 0, 0), -1)
@@ -14,35 +15,95 @@ def drawSingleEye(img, params):
     cv2.circle(img, (dim//2, dim//2), dim//2, (255, 255, 255), -1) # white eye
     cv2.circle(img, (dim//2, dim//2), dim//2, (0, 0, 0), 3) # white eye
     cv2.circle(img, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), eyeRad, (0, 0, 0), -1) # pupil
-    img[eyemask == 255] = 255
-
     return img
 
+def drawEyes(params):
+    
+    img = np.zeros((512,512,3), np.uint8) * 255
+    limg = drawPupil(img.copy(), params)
+    rimg = drawPupil(img.copy(), params)
+    limg = drawEyeLid(limg, params, True)
+    rimg = drawEyeLid(rimg, params, False)
 
+    eyemask = img.copy()
+    cv2.circle(eyemask, (dim//2, dim//2), dim//2, (0, 0, 0), -1)
+    limg[eyemask == 255] = 255
+    rimg[eyemask == 255] = 255
+
+    return np.hstack([limg, rimg])
+    
+
+def drawEyeLid(img, params, left = False):
+    r, theta, arousal, valence = params
+
+    if not left:
+        valence = -valence
+
+    pts = np.array(
+        [
+            [-10 * dim, -10 * dim],
+            [10 * dim, -dim],
+            [arousal + dim * np.cos(valence), arousal + dim  * np.sin(valence)],
+            [arousal - dim * np.cos(valence), arousal - dim  * np.sin(valence)],
+        ], int
+    )
+    if valence < 0:
+        pts = np.array(
+        [
+            [-10 * dim, -10 * dim],
+            [arousal - dim * np.cos(valence), arousal - dim  * np.sin(valence)],
+            [arousal + dim * np.cos(valence), arousal + dim  * np.sin(valence)],
+            [10 * dim, -dim],
+        ], int
+    )
+
+    cv2.fillPoly(img, np.int32([pts]), (0, 0, 0))
+    return img
+
+    
+
+
+
+mode = 'eyes'
 def drawLoc(event,x,y,flags,param):
-    global ix,iy,drawing, img
+    global img, mode, params
     img = np.zeros((512,512,3), np.uint8)
-    if event == cv2.EVENT_MOUSEMOVE:
-        r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2)
-        theta = np.arctan2((y- dim//2), (x- dim//2))
-        params[0] = min(r, dim//2 - eyeRad)
-        params[1] = theta
+    cv2.line(img, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
+    cv2.line(img, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
+    cv2.circle(img,(x,y),10,(0,0,255),-1)
+    r, theta = params[:2]
+    cv2.circle(img, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
 
-        cv2.line(img, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
-        cv2.line(img, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
-        cv2.circle(img,(x,y),10,(0,0,255),-1)
+    cv2.circle(img, (int(params[3] * dim /np.pi)  + dim//2 , int(params[2])), 10, (0, 0, 255), -1) # pupil
+
+
+    if event == cv2.EVENT_MOUSEMOVE:
+        if mode == 'eyes':
+            r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2)
+            theta = np.arctan2((y- dim//2), (x- dim//2))
+            params[0] = min(r, dim//2 - eyeRad)
+            params[1] = theta
+        if mode == 'valencearousal':
+            params[2] = (y )
+            params[3] = ((x - dim//2) / dim) *  np.pi
+        
 
 cv2.namedWindow('image')
 cv2.setMouseCallback('image',drawLoc)
 img = np.zeros((dim,dim,3), np.uint8)
 
-params = np.zeros((2,), float)
+params = np.zeros((4,), float)
+inc = 10
 while(1):
     cv2.imshow('image', img)
-    eye = np.ones((dim, dim, 3), np.uint8)*255
-    eye = drawSingleEye(eye, params)
-    eye = np.hstack([eye, eye])
+    eye = drawEyes(params)
+    # eye = np.hstack([eye, eye])
     cv2.imshow('a', eye)
     k = cv2.waitKey(1) & 0xFF
     if k == ord('q'):
         break
+    elif k == ord('v'):
+        mode = 'valencearousal'
+    elif k == ord('e'):
+        mode = 'eyes'
+    
