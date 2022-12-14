@@ -5,7 +5,7 @@ ix, iy = -1,-1
 
 eyeRad = 150
 eyesize = 512
-
+desired_size = 750
 def drawEyeLid(img, params, left = False):
     r, theta, arousal, valence = params
     if left:
@@ -19,7 +19,7 @@ mode = 'eyes'
 def drawLoc(event,x,y,flags,param):
     global drawPlane1, mode, params
     dim = 200
-    drawPlane1 = np.zeros((200,200,3), np.uint8)
+    drawPlane1 = np.zeros((dim,dim,3), np.uint8)
     cv2.line(drawPlane1, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
     cv2.line(drawPlane1, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
     cv2.circle(drawPlane1,(x,y),10,(0,0,255),-1)
@@ -31,7 +31,7 @@ def drawLoc(event,x,y,flags,param):
 
     if event == cv2.EVENT_MOUSEMOVE:
         if mode == 'eyes':
-            r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2) 
+            r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2) * 1.5
             theta = np.arctan2((y- dim//2), (x- dim//2))
             params[0] = min(r, eyesize//2 - eyeRad)
             params[1] = theta
@@ -40,14 +40,14 @@ def drawLoc(event,x,y,flags,param):
             params[3] = x - dim//2
         
 
-def loadAsset(path):
-    hh, ww = 650, 650
+def loadAsset(path, offset = (0, 0)):
+    hh, ww = desired_size, desired_size
     bg = np.zeros((hh, ww, 3), np.uint8)
     alphas = np.zeros((hh, ww), np.uint8)
     img = cv2.imread(path, -1)
     h, w, _ = img.shape
-    yoff = round((hh-h)/2)
-    xoff = round((ww-w)/2)
+    yoff = round((hh-h)/2) + offset[1]
+    xoff = round((ww-w)/2) + offset[0]
     im = img[:, :, :3]
     alpha = img[:, :, 3]
     im[alpha == 0] = 0
@@ -69,7 +69,7 @@ def generateBall(iris, pupil, frac = 1, offset = (0, 0)):
     pa, pb = pupil
     pa = cv2.resize(pa, (0, 0), fx = frac, fy = frac, interpolation = cv2.INTER_NEAREST)
     pb = cv2.resize(pb, (0, 0), fx = frac, fy = frac, interpolation = cv2.INTER_NEAREST)
-    desired_size = 650
+    
     new_size = pa.shape
     delta_w = desired_size - new_size[1]
     delta_h = desired_size - new_size[0]
@@ -79,23 +79,39 @@ def generateBall(iris, pupil, frac = 1, offset = (0, 0)):
     pa = cv2.copyMakeBorder(pa, top, bottom, left, right, cv2.BORDER_CONSTANT)
     pb = cv2.copyMakeBorder(pb, top, bottom, left, right, cv2.BORDER_CONSTANT)
     pup = pa, pb
+    
     eyeball = blend(iris, pup, (np.array(offset)/4.0).astype(int))
     return eyeball
 
 
 def renderEye(params):
-    viewLoc = (params[0] * np.cos(params[1]), params[0] * np.sin(params[1]))
+    global sclera
+    viewLoc = np.array((params[0] * np.cos(params[1]), params[0] * np.sin(params[1])))
     eyeball = generateBall(iris, pupil, 0.7, viewLoc)
-    finalimg = blend(sclera, eyeball, viewLoc)
-    return finalimg[0]
+    browloc = viewLoc / 4
+    browloc[1] -= 300
+    scleraLoc = viewLoc / 5
+    print(scleraLoc)
+    ia = np.roll(sclera[0], int(scleraLoc[0]), 1)
+    ib = np.roll(sclera[1], int(scleraLoc[0]), 1)
+    ia = np.roll(ia, int(scleraLoc[1]), 0)
+    ib = np.roll(ib, int(scleraLoc[1]), 0)
+    sclera_temp = ia, ib
+    finalimg = blend(sclera_temp, eyeball, viewLoc)
+    
+    img, alpha = blend(finalimg, brow, browloc)
+    
+    mask = cv2.inRange(img, np.array([-1, -1, -1]), np.array([1, 1, 1]))
+    img[mask > 0] = [138, 207, 255]
+    return img
 
-drawPlane1 = np.zeros((eyesize,eyesize,3), np.uint8)
+
 
 
 brow = loadAsset('../images/parts/brow.png')
-iris = loadAsset('../images/parts/iris.png')
-pupil = loadAsset('../images/parts/pupil.png')
-sclera = loadAsset('../images/parts/sclera.png')
+iris = loadAsset('../images/parts/iris.png', )
+pupil = loadAsset('../images/parts/pupil.png', )
+sclera = loadAsset('../images/parts/sclera.png', )
 ulid = loadAsset('../images/parts/upperlid.png')
 llid = loadAsset('../images/parts/lowerlid.png')
 
@@ -104,7 +120,7 @@ cv2.namedWindow('drawPlane1')
 cv2.setMouseCallback('drawPlane1',drawLoc)
 
 
-
+drawPlane1 = np.zeros((200,200,3), np.uint8)
 params = np.zeros((4,), float)
 inc = 10
 while(1):
