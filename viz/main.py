@@ -96,15 +96,15 @@ def renderEye(params):
     viewLoc = np.array((r * np.cos(theta), r * np.sin(theta)))
     eyeball = generateBall(iris, pupil, 0.7, viewLoc)
     browloc = viewLoc / 4
-    params['brow'][0] = np.mod(params['brow'][0], 360)
+    params['brow'][0] = np.mod(params['brow'][0] + 360, 360)
 
-    if params['brow'][0] <= 270:
-        params['brow'][0] = 360
+    # if params['brow'][0] <= 270:
+    #     params['brow'][0] = 0
 
-
-    params['brow'][1] = 150 + ( params['brow'][0] * 1.5 - 360)
+    r = params['brow'][1] + ( params['brow'][0] * 1.5 - 360)
     
-    theta, r = params['brow']
+    theta= params['brow'][0]
+
     browloc[0] += r * np.sin(-theta * np.pi/180)
     browloc[1] -= r * np.cos(-theta * np.pi/180)
     scleraLoc = viewLoc / 5
@@ -132,7 +132,8 @@ def browCallback(event,x,y,flags,param):
     cv2.circle(browDrawPlane, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
     dim = 200
     if event == cv2.EVENT_MOUSEMOVE:
-        params['brow'][0] = -x/4
+        params['brow'][0] =  - (x ) / 4
+        params['brow'][1] = 200 - y
 
 brow = loadAsset('../images/parts/brow.png')
 iris = loadAsset('../images/parts/iris.png', )
