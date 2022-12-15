@@ -74,6 +74,10 @@ cv2.setMouseCallback('image',drawLoc)
 img = np.zeros((dim,dim,3), np.uint8)
 
 params = np.zeros((4,), float)
+params[0] = 0
+params[1] = 0
+params[2] = dim//2
+params[3] = dim//2
 inc = 10
 while(1):
     cv2.imshow('image', img)
