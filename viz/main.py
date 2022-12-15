@@ -6,14 +6,6 @@ ix, iy = -1,-1
 eyeRad = 150
 eyesize = 512
 desired_size = 750
-def drawEyeLid(img, params, left = False):
-    r, theta, arousal, valence = params
-    if left:
-        cv2.circle(img, (eyesize//2 - int(valence), int(arousal) * 4), eyesize, (0, 0, 0), -1)
-    else:
-        cv2.circle(img, (eyesize//2 + int(valence), int(arousal) * 4), eyesize, (0, 0, 0), -1)
-    return img
-
 
 mode = 'eyes'
 def ballCallback(event,x,y,flags,param):
@@ -26,14 +18,11 @@ def ballCallback(event,x,y,flags,param):
     r, theta = params['eyeloc'][:2]
     cv2.circle(ballDrawPlane, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
     if event == cv2.EVENT_MOUSEMOVE:
-        if mode == 'eyes':
-            r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2) * 1.5
-            theta = np.arctan2((y- dim//2), (x- dim//2))
-            params['eyeloc'][0] = min(r, eyesize//2 - eyeRad)
-            params['eyeloc'][1] = theta
-        if mode == 'valencearousal':
-            params[2] = (y - dim//2)
-            params[3] = x - dim//2
+        r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2) * 1.5
+        theta = np.arctan2((y- dim//2), (x- dim//2))
+        params['eyeloc'][0] = min(r, eyesize//2 - eyeRad)
+        params['eyeloc'][1] = theta
+
         
 
 def loadAsset(path, offset = (0, 0)):
@@ -65,9 +54,9 @@ def blend(im1, im2, offset = (0, 0)):
     return srcRGB, np.clip(dstA + srcA, 0, 1)
 
 def rotate_image(image, angle):
-  image_center = tuple(np.array(image.shape[1::-1]) / 2)
+  image_center = tuple(np.array(image.shape[1::-1], np.float64) / 2)
   rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-  result = cv2.warpAffine(image.copy(), rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
+  result = cv2.warpAffine(image.copy(), rot_mat, image.shape[1::-1], flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REPLICATE)
   return result
 
 
@@ -89,37 +78,46 @@ def generateBall(iris, pupil, frac = 1, offset = (0, 0)):
     eyeball = blend(iris, pup, (np.array(offset)/4.0).astype(int))
     return eyeball
 
+def applyTransform(params, loc, img, verbose = False):
+    theta, r = params
+    theta = np.mod(theta + 360, 360)
+    # r = r + (theta * 2 - 360)
+    if verbose:
+        print(theta)
+    loc = np.array(loc).astype(float)
+    loc[0] += r * np.sin(-float(theta) * np.pi/180)
+    loc[1] -= r * np.cos(-float(theta) * np.pi/180)
+    loc = loc.astype(int)
+    brow_temp = rotate_image(img[0], theta), rotate_image(img[1], theta)
+    return loc, brow_temp
+
 
 def renderEye(params):
     global sclera, brow
     r, theta = params['eyeloc']
     viewLoc = np.array((r * np.cos(theta), r * np.sin(theta)))
     eyeball = generateBall(iris, pupil, 0.7, viewLoc)
-    browloc = viewLoc / 4
-    params['brow'][0] = np.mod(params['brow'][0] + 360, 360)
 
-    # if params['brow'][0] <= 270:
-    #     params['brow'][0] = 0
+    browloc, brow_temp = applyTransform(params['brow'], viewLoc / 4, brow)
 
-    r = params['brow'][1] + ( params['brow'][0] * 1.5 - 360)
-    
-    theta= params['brow'][0]
-
-    browloc[0] += r * np.sin(-theta * np.pi/180)
-    browloc[1] -= r * np.cos(-theta * np.pi/180)
     scleraLoc = viewLoc / 5
     ia = np.roll(sclera[0], int(scleraLoc[0]), 1)
     ib = np.roll(sclera[1], int(scleraLoc[0]), 1)
     ia = np.roll(ia, int(scleraLoc[1]), 0)
     ib = np.roll(ib, int(scleraLoc[1]), 0)
     sclera_temp = ia, ib
+
+
     finalimg = blend(sclera_temp, eyeball, viewLoc)
     
-    brow_temp = rotate_image(brow[0], params['brow'][0]), rotate_image(brow[1], params['brow'][0])
+    ulidLoc, ulid_temp = applyTransform(params['ulid'], viewLoc / 1.5, ulid, True)
+    finalimg = blend(finalimg, ulid_temp, ulidLoc)
+    finalimg = blend(finalimg, llid, np.array([0, 160]) + viewLoc / 4)
     img, alpha = blend(finalimg, brow_temp, browloc)
     
     mask = cv2.inRange(img, np.array([-1, -1, -1]), np.array([1, 1, 1]))
     img[mask > 0] = [138, 207, 255]
+    # img[mask > 0] = [138, 207, 200]
     return img
 
 def browCallback(event,x,y,flags,param):
@@ -133,7 +131,7 @@ def browCallback(event,x,y,flags,param):
     dim = 200
     if event == cv2.EVENT_MOUSEMOVE:
         params['brow'][0] =  - (x ) / 4
-        params['brow'][1] = 200 - y
+        params['brow'][1] = 350 - y
 
 brow = loadAsset('../images/parts/brow.png')
 iris = loadAsset('../images/parts/iris.png', )
@@ -152,7 +150,7 @@ cv2.setMouseCallback('browDrawPlane',browCallback)
 
 ballDrawPlane = np.zeros((200,200,3), np.uint8)
 browDrawPlane = np.zeros((200,200,3), np.uint8)
-params = {'eyeloc' : [0, 0], 'brow' : [-0, 0]}
+params = {'eyeloc' : [0, 0], 'brow' : [10, 200], 'ulid' : [-30, 200], 'llid' : [-30, 0], }
 inc = 10
 while(1):
     cv2.imshow('ballDrawPlane', ballDrawPlane)
