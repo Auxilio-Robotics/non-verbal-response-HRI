@@ -1,11 +1,18 @@
 import numpy as np
 import cv2
+import argparse
+
 drawing = True # true if mouse is pressed
 ix, iy = -1,-1
 
 eyeRad = 150
 eyesize = 512
 desired_size = 750
+
+# take verbosity bool as an argument
+parser = argparse.ArgumentParser()
+parser.add_argument('--verbose', action='store_true')
+args = parser.parse_args()
 
 mode = 'eyes'
 def ballCallback(event,x,y,flags,param):
@@ -83,7 +90,7 @@ def applyTransform(params, loc, img, verbose = False):
     theta = np.mod(theta + 360, 360)
     # r = r + (theta * 2 - 360)
     if verbose:
-        print(theta)
+        print('Theta: ', theta)
     loc = np.array(loc).astype(float)
     loc[0] += r * np.sin(-float(theta) * np.pi/180)
     loc[1] -= r * np.cos(-float(theta) * np.pi/180)
@@ -98,7 +105,7 @@ def renderEye(params):
     viewLoc = np.array((r * np.cos(theta), r * np.sin(theta)))
     eyeball = generateBall(iris, pupil, 0.7, viewLoc)
 
-    browloc, brow_temp = applyTransform(params['brow'], viewLoc / 4, brow)
+    browloc, brow_temp = applyTransform(params['brow'], viewLoc / 4, brow, params['verbose'])
 
     scleraLoc = viewLoc / 5
     ia = np.roll(sclera[0], int(scleraLoc[0]), 1)
@@ -110,7 +117,7 @@ def renderEye(params):
 
     finalimg = blend(sclera_temp, eyeball, viewLoc)
     
-    ulidLoc, ulid_temp = applyTransform(params['ulid'], viewLoc / 1.5, ulid, True)
+    ulidLoc, ulid_temp = applyTransform(params['ulid'], viewLoc / 1.5, ulid, params['verbose'])
     finalimg = blend(finalimg, ulid_temp, ulidLoc)
     finalimg = blend(finalimg, llid, np.array([0, 160]) + viewLoc / 4)
     img, alpha = blend(finalimg, brow_temp, browloc)
@@ -150,7 +157,7 @@ cv2.setMouseCallback('browDrawPlane',browCallback)
 
 ballDrawPlane = np.zeros((200,200,3), np.uint8)
 browDrawPlane = np.zeros((200,200,3), np.uint8)
-params = {'eyeloc' : [0, 0], 'brow' : [10, 200], 'ulid' : [-30, 200], 'llid' : [-30, 0], }
+params = {'eyeloc' : [0, 0], 'brow' : [10, 200], 'ulid' : [-30, 200], 'llid' : [-30, 0], 'verbose' : args.verbose}
 inc = 10
 while(1):
     cv2.imshow('ballDrawPlane', ballDrawPlane)
