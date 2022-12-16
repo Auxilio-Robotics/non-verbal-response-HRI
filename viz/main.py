@@ -112,7 +112,10 @@ def renderEye(params):
     
     ulidLoc, ulid_temp = applyTransform(params['ulid'], viewLoc / 1.5, ulid, True)
     finalimg = blend(finalimg, ulid_temp, ulidLoc)
-    finalimg = blend(finalimg, llid, np.array([0, 100]) + viewLoc / 4)
+
+    llidLoc, llid_temp = applyTransform(params['llid'], viewLoc / 1.5, llid, True)
+    # finalimg = blend(finalimg, llid, np.array([0, 100]) + viewLoc / 4)
+    finalimg = blend(finalimg, llid_temp, llidLoc)
     img, alpha = blend(finalimg, brow_temp, browloc)
     
     mask = cv2.inRange(img, np.array([-1, -1, -1]), np.array([1, 1, 1]))
@@ -127,11 +130,11 @@ def browCallback(event,x,y,flags,param):
     cv2.line(browDrawPlane, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
     cv2.line(browDrawPlane, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
     cv2.circle(browDrawPlane,(x,y),10,(0,0,255),-1)
-    r, theta = params['eyeloc'][:2]
+    r, theta = params['brow'][:2]
     cv2.circle(browDrawPlane, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
     dim = 200
     if event == cv2.EVENT_MOUSEMOVE:
-        params['brow'][0] =  - (x ) / 4
+        params['brow'][0] =  - (x - dim // 2) / 4
         params['brow'][1] = 350 - y
 
 
@@ -142,12 +145,27 @@ def ulidCallback(event,x,y,flags,param):
     cv2.line(ulidDrawPlane, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
     cv2.line(ulidDrawPlane, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
     cv2.circle(ulidDrawPlane,(x,y),10,(0,0,255),-1)
-    r, theta = params['eyeloc'][:2]
+    r, theta = params['ulid'][:2]
     cv2.circle(ulidDrawPlane, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
     dim = 200
     if event == cv2.EVENT_MOUSEMOVE:
-        params['ulid'][0] =  - (x ) / 4
-        params['ulid'][1] = 200 - y
+        params['ulid'][0] =  (x - dim//2) / 3
+        params['ulid'][1] = - y + 300
+
+
+def llidCallback(event,x,y,flags,param):
+    global llidDrawPlane
+    dim = 200
+    llidDrawPlane = np.zeros((dim,dim,3), np.uint8)
+    cv2.line(llidDrawPlane, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
+    cv2.line(llidDrawPlane, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
+    cv2.circle(llidDrawPlane,(x,y),10,(0,0,255),-1)
+    r, theta = params['llid'][:2]
+    cv2.circle(llidDrawPlane, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
+    dim = 200
+    if event == cv2.EVENT_MOUSEMOVE:
+        params['llid'][0] =  (x - dim//2) / 3
+        params['llid'][1] = - y - 65
 
 brow = loadAsset('../images/parts/brow.png')
 iris = loadAsset('../images/parts/iris.png', )
@@ -163,6 +181,8 @@ cv2.setMouseCallback('ballDrawPlane',ballCallback)
 
 cv2.namedWindow('ulidDrawPlane')
 cv2.setMouseCallback('ulidDrawPlane',ulidCallback)
+cv2.namedWindow('llidDrawPlane')
+cv2.setMouseCallback('llidDrawPlane',llidCallback)
 
 cv2.namedWindow('browDrawPlane')
 cv2.setMouseCallback('browDrawPlane',browCallback)
@@ -171,12 +191,14 @@ cv2.setMouseCallback('browDrawPlane',browCallback)
 ballDrawPlane = np.zeros((200,200,3), np.uint8)
 browDrawPlane = np.zeros((200,200,3), np.uint8)
 ulidDrawPlane = np.zeros((200,200,3), np.uint8)
-params = {'eyeloc' : [0, 0], 'brow' : [10, 200], 'ulid' : [0, 200], 'llid' : [-30, 100], }
+llidDrawPlane = np.zeros((200,200,3), np.uint8)
+params = {'eyeloc' : [0, 0], 'brow' : [10, 200], 'ulid' : [0, 200], 'llid' : [-30, -100], }
 inc = 10
 while(1):
     cv2.imshow('ballDrawPlane', ballDrawPlane)
     cv2.imshow('browDrawPlane', browDrawPlane)
     cv2.imshow('ulidDrawPlane', ulidDrawPlane)
+    cv2.imshow('llidDrawPlane', llidDrawPlane)
     eye = renderEye(params)
     # eye = np.hstack([eye, eye])
     cv2.imshow('a', eye)
