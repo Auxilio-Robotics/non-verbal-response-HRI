@@ -1,0 +1,59 @@
+<html>
+<head>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        img {
+            padding: 0;
+            display: block;
+            margin: 0 auto;
+            max-height: 100%;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <img id="eyes" src="{{ url_for('video_feed') }}" width="100%" style="height:auto;width:100%;">
+</body>
+
+<script>
+  /* Get the documentElement (<html>) to display the page in fullscreen */
+  var elem = document.documentElement;
+
+  elem.addEventListener("keypress", openFullscreen);
+  
+  function openFullscreen() {
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) { /* Safari */
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE11 */
+      elem.msRequestFullscreen();
+    }
+  }
+
+  const jsContent = `
+        try {
+            var e = new KeyboardEvent("keydown", {
+                isTrusted: true,
+                bubbles: true,
+                cancelable: true,
+            });
+            try {
+                document.dispatchEvent(e);
+                console.log('dispatched', e);
+            } catch (errx) {
+                console.log('event error', errx);
+            }
+        } catch (errx) {
+            console.log(errx);
+        }
+       `;
+        const userGesture = true;
+        document.windowContents.executeJavaScript(jsContent, userGesture);
+</script>  
+</html>

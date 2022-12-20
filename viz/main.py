@@ -1,94 +1,61 @@
+# kivy app to display an image on an iPad
+
+# Path: non-verbal-response-HRI/viz/kivy.py
+
+import os
+import json
+import logging
+import random
+import time
+
 import numpy as np
 import cv2
-drawing = True # true if mouse is pressed
-ix, iy = -1,-1
+import matplotlib.pyplot as plt
+import kivy
+kivy.require('1.9.0')
 
-eyeRad = 85
-dim = 512
+from kivy.app import App
+from kivy.uix.floatlayout import FloatLayout
+from kivy.graphics.texture import Texture
+from kivy.uix.image import Image
+from kivy.lang import Builder
+from kivy.core.window import Window
 
-def drawPupil(img, params):
-    r, theta, arousal, valence = params
+from viz import Visualizer
+from state_machine import StateMachine
 
-    eyemask = img.copy()
-    cv2.circle(eyemask, (dim//2, dim//2), dim//2, (0, 0, 0), -1)
+"""! Generate frames for the visualization"""
+def generate_frames():
+    states = ['neutral', 'happy', 'sad', 'neutral', 'sad', 'happy', 'neutral']
+    state_machine = StateMachine(states, 512)
+    current_state = state_machine.getState()
 
-    cv2.circle(img, (dim//2, dim//2), dim//2, (255, 255, 255), -1) # white eye
-    cv2.circle(img, (dim//2, dim//2), dim//2, (0, 0, 0), 3) # white eye
-    cv2.circle(img, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), eyeRad, (0, 0, 0), -1) # pupil
-    return img
+    viz = Visualizer()
+    viz.setParams(state_machine.getParams())
 
-def drawEyes(params):
-    
-    img = np.zeros((512,512,3), np.uint8) * 255
-    limg = drawPupil(img.copy(), params)
-    rimg = drawPupil(img.copy(), params)
-    limg = drawEyeLid(limg, params, True)
-    rimg = drawEyeLid(rimg, params, False)
+    while(1):
+        print('state: ', state_machine.getState())
 
-    eyemask = img.copy()
-    cv2.circle(eyemask, (dim//2, dim//2), dim//2, (0, 0, 0), -1)
-    limg[eyemask == 255] = 255
-    rimg[eyemask == 255] = 255
+        params = state_machine.getParams()
+        viz.setParams(params)
+        eyes = viz.drawEyes()
 
-    return np.hstack([limg, rimg])
-    
+        ret, buffer = cv2.imencode('.jpg', eyes)
+        frame = buffer.tobytes()
 
-def drawEyeLid(img, params, left = False):
-    r, theta, arousal, valence = params
-    if left:
-        cv2.circle(img, (dim//2 - int(valence), int(arousal) * 4), dim, (0, 0, 0), -1)
-    else:
-        cv2.circle(img, (dim//2 + int(valence), int(arousal) * 4), dim, (0, 0, 0), -1)
-    return img
-
-    
-
-
-
-mode = 'eyes'
-def drawLoc(event,x,y,flags,param):
-    global img, mode, params
-    img = np.zeros((512,512,3), np.uint8)
-    cv2.line(img, (dim//2, 0), (dim//2, dim), (255, 255, 255), 2)
-    cv2.line(img, (0, dim//2), (dim, dim//2), (255, 255, 255), 2)
-    cv2.circle(img,(x,y),10,(0,0,255),-1)
-    r, theta = params[:2]
-    cv2.circle(img, (dim//2 + int(r * np.cos(theta)) , dim//2 + int(r * np.sin(theta)) ), 10, (0, 255, 0), -1) # pupil
-
-    cv2.circle(img, (int(params[3] * dim /np.pi)  + dim//2 , int(params[2])), 10, (0, 0, 255), -1) # pupil
-
-
-    if event == cv2.EVENT_MOUSEMOVE:
-        if mode == 'eyes':
-            r = np.sqrt((x - dim//2)**2 + (y- dim//2)**2)
-            theta = np.arctan2((y- dim//2), (x- dim//2))
-            params[0] = min(r, dim//2 - eyeRad)
-            params[1] = theta
-        if mode == 'valencearousal':
-            params[2] = (y - dim//2)
-            params[3] = x - dim//2
+        texture = Texture.create(size=(500, 500), colorfmt="rgb")
+        texture.blit_buffer(frame, bufferfmt="ubyte", colorfmt="rgb")
         
+        yield texture
 
-cv2.namedWindow('image')
-cv2.setMouseCallback('image',drawLoc)
-img = np.zeros((dim,dim,3), np.uint8)
+class RootWidget(FloatLayout):
+    def __init__(self, **kwargs):
+        super(RootWidget, self).__init__(**kwargs)
+        self.image = Image()
+class TestApp(App):
+    def build(self):
+        self.image.texture = generate_frames()
+        return self.image
 
-params = np.zeros((4,), float)
-params[0] = 0
-params[1] = 0
-params[2] = dim//2
-params[3] = dim//2
-inc = 10
-while(1):
-    cv2.imshow('image', img)
-    eye = drawEyes(params)
-    # eye = np.hstack([eye, eye])
-    cv2.imshow('a', eye)
-    k = cv2.waitKey(1) & 0xFF
-    if k == ord('q'):
-        break
-    elif k == ord('v'):
-        mode = 'valencearousal'
-    elif k == ord('e'):
-        mode = 'eyes'
-    
+if __name__ == '__main__':
+    TestApp().run()
