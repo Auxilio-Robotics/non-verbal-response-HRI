@@ -5,16 +5,16 @@ var previousError = []
 for(var i = 0; i < circle.length; i++){
     previousError.push({'x' : 0, 'y' : 0});
 }
-function controller(curpoints, setpoint){
+function controller(curpoints, setpoint, kp, kd, offsets){
     var xerrorsum = 0;
     var yerrorsum = 0;
 
-    kp = states[curstate]['gains'][0];
-    kd = states[curstate]['gains'][1];
-    
+    // kp = ;
+    // kd = states[curstate]['gains'][1];
+
     for(var i = 0; i < curpoints.length; i++){
-        xerror = setpoint[i].x - curpoints[i].x + states[curstate]['offsets'][0];
-        yerror = setpoint[i].y - curpoints[i].y + states[curstate]['offsets'][1];
+        xerror = setpoint[i].x - curpoints[i].x + offsets[0];
+        yerror = setpoint[i].y - curpoints[i].y + offsets[1];
         xerrorsum += xerror;
         yerrorsum += yerror;
         xderror = setpoint[i].x - curpoints[i].x

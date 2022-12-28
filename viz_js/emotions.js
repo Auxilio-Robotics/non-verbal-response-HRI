@@ -50,54 +50,54 @@ var bored = [
 ];
 var blink = [
     {
-        "x": 642,
-        "y": 378
+      "x": 682,
+      "y": 362
     },
     {
-        "x": 598,
-        "y": 409
+      "x": 613,
+      "y": 383
     },
     {
-        "x": 477,
-        "y": 413
+      "x": 442,
+      "y": 386
     },
     {
-        "x": 316,
-        "y": 418
+      "x": 353,
+      "y": 385
     },
     {
-        "x": 158,
-        "y": 411
+      "x": 232,
+      "y": 382
     },
     {
-        "x": 70,
-        "y": 404
+      "x": 112,
+      "y": 380
     },
     {
-        "x": 29,
-        "y": 368
+      "x": 25,
+      "y": 361
     },
     {
-        "x": 66,
-        "y": 333
+      "x": 57,
+      "y": 346
     },
     {
-        "x": 219,
-        "y": 318
+      "x": 200,
+      "y": 345
     },
     {
-        "x": 331,
-        "y": 313
+      "x": 306,
+      "y": 346
     },
     {
-        "x": 468,
-        "y": 318
+      "x": 416,
+      "y": 346
     },
     {
-        "x": 598,
-        "y": 330
+      "x": 604,
+      "y": 354
     }
-];
+  ];
 var happy = [
     {
         "x": 650,
@@ -250,7 +250,7 @@ var angry = [
     }
   ];
 var numPoints = 12;
-var radius = 300;
+var radius = 250;
 var xoffset = 350;
 var yoffset = 350;
 var circle = [];
@@ -258,8 +258,60 @@ for (var i = 0; i < numPoints; i++) {
     var angle = (Math.PI * 2) / numPoints * i;
     circle.push({ x: radius * Math.cos(angle) + xoffset, y: radius * Math.sin(angle) + yoffset });
 }
+var dilate = [
+    {
+      "x": 650,
+      "y": 350
+    },
+    {
+      "x": 627,
+      "y": 507
+    },
+    {
+      "x": 513,
+      "y": 587
+    },
+    {
+      "x": 352,
+      "y": 609
+    },
+    {
+      "x": 196,
+      "y": 586
+    },
+    {
+      "x": 73,
+      "y": 510
+    },
+    {
+      "x": 50,
+      "y": 350.00000000000006
+    },
+    {
+      "x": 74,
+      "y": 200
+    },
+    {
+      "x": 188,
+      "y": 112
+    },
+    {
+      "x": 351,
+      "y": 76
+    },
+    {
+      "x": 512,
+      "y": 107
+    },
+    {
+      "x": 622,
+      "y": 194
+    }
+  ];
 var states = [
     { "state": circle, "gains": [0.2, 0.05], "offsets" : [0, 0]},
-    { "state": happy, "gains": [0.3, 0.5], "offsets" : [0, -10]},
-    { "state": angry, "gains": [0.3, 0.3], "offsets" : [50, 30]},
+    { "state": dilate, "gains": [0.03, 0.0], "offsets" : [0, 0]},
+    // { "state": circle, "gains": [0.2, 0.05], "offsets" : [0, 0]},
+    // { "state": happy, "gains": [0.3, 0.5], "offsets" : [0, -10]},
+    // { "state": angry, "gains": [0.3, 0.3], "offsets" : [50, 30]},
 ];

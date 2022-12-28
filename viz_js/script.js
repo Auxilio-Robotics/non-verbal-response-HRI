@@ -19,6 +19,7 @@ for (var i = 0; i < numPoints; i++) {
     var angle = (Math.PI * 2) / numPoints * i;
     points.push({ x: radius * Math.cos(angle) + xoffset, y: radius * Math.sin(angle) + yoffset });
 }
+// points = blink;
 var speed = 0;
 
 var isMouseDown = false;
@@ -99,11 +100,7 @@ function animate(){
         var cp2x = p2.x - (p3.x - p1.x) / 6 * t;
         var cp2y = p2.y - (p3.y - p1.y) / 6 * t;
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-    }
-    // points[Math.floor(Math.random() * points.length)].x += Math.random() * speed;
-    // points[Math.floor(Math.random() * points.length)].y += Math.random() * speed;
-
-    
+    }  
     
     ctx.fill();
 
@@ -115,28 +112,31 @@ function animate(){
         ctx.stroke();
     }
 
-    points = controller(points, setpoint);
+    points = controller(points, setpoint, kp, kd, states[curstate]['offsets']);
     requestAnimationFrame(animate);
   
 }
-var curstate = 1;
-// setInterval(function() {
-    
-//     setpoint = blink;
-//     setTimeout(function() {
-//         setpoint = states[curstate];
-//     }, 100);
-
-// }, 5000);
-
+var curstate = 0;
 setInterval(function() {
     
-    curstate += 1;
-    curstate %= states.length;
-    setpoint = states[curstate]['state'];
+    setpoint = blink;
+    kp = 0.6;
+    kd = 0; 
+    setTimeout(function() {
+        setpoint = states[curstate]['state'];
+    }, 100);
+
+}, 1000);
+
+// setInterval(function() {
     
+//     curstate += 1;
+//     curstate %= states.length;
+//     setpoint = states[curstate]['state'];
+//     kp = states[curstate]['gains'][0];
+//     kd = states[curstate]['gains'][0];
     
 
-}, 2000);
+// }, 1000);
 
 animate();
