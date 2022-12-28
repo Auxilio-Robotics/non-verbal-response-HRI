@@ -1,92 +1,55 @@
 var canvas = document.getElementById("canvas");
-// Get the canvas context, which is used to draw on the canvas
 var ctx = canvas.getContext("2d");
-
-// Set the stroke color for the curve
 ctx.strokeStyle = "grey";
-ctx.fillStyle = "white";
-ctx.imageSmoothingEnabled = true;
-// Begin a new path
-ctx.beginPath();
-var x1 = 50;
-var y1 = 50;
 
-// Set the starting point for the curve
-ctx.moveTo(x1, y1);
-// Set the points array
+ctx.imageSmoothingEnabled = true;
+ctx.beginPath();
+var setpoint = circle;
+
+var curstate = 0;
+
 var points = [];
 for (var i = 0; i < numPoints; i++) {
     var angle = (Math.PI * 2) / numPoints * i;
     points.push({ x: radius * Math.cos(angle) + xoffset, y: radius * Math.sin(angle) + yoffset });
 }
-// points = blink;
-var speed = 0;
-
-var isMouseDown = false;
-
-// Index of the selected point (if any)
-var selectedPointIndex = -1;
-function getMousePos(canvas, e) {
-    var rect = canvas.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  }
-
-  function distance(p1, p2) {
-    var dx = p1.x - p2.x;
-    var dy = p1.y - p2.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-  
-// Handle mousedown event
-canvas.addEventListener("mousedown", function (e) {
-  // Get the mouse position relative to the canvas
-  var mousePos = getMousePos(canvas, e);
-
-  // Check if the mouse is over any of the points
-  for (var i = 0; i < points.length; i++) {
-    if (distance(mousePos, points[i]) < 10) {
-      // Mouse is over a point, set the flag and selected point index
-      isMouseDown = true;
-      selectedPointIndex = i;
-      break;
-    }
-  }
-});
 
 
-// Handle mousemove event
-canvas.addEventListener("mousemove", function (e) {
-    // Get the mouse position relative to the canvas
-    var mousePos = getMousePos(canvas, e);
-  
-    // Check if the mouse is down and over a point
-    if (isMouseDown && selectedPointIndex >= 0) {
-      // Update the position of the selected point
-      points[selectedPointIndex] = mousePos;
-  
-      // Redraw the curve
+ctx.moveTo(points[0].x, points[0].y);
+
+function renderpupil(r, theta, offsets){
+    ctx.fillStyle = "#363a3d";
+    ctx.beginPath();
+    // theta = theta  * Math.PI / 180;
+    var eyeLoc = [0, 0];
+    var newrad = r / 1.1;
     
-    }
-  });
-  
-  // Handle mouseup event
-  canvas.addEventListener("mouseup", function (e) {
-    // Reset the flag and selected point index
-    if(isMouseDown){
-        console.log((points));
-    }
-    isMouseDown = false;
-    selectedPointIndex = -1;
+    newrad = Math.min(newrad, 160);
     
-  });
+    console.log(newrad, r);
+    eyeLoc[0] = newrad * Math.cos(theta);
+    eyeLoc[1] = newrad * Math.sin(theta);
+    ctx.arc(xoffset + eyeLoc[0] + offsets[0], yoffset + eyeLoc[1]+ offsets[1], 80, 0, Math.PI * 2);   
+    ctx.fill();
 
+    eyeLoc[0] = Math.min(r, 170) * Math.cos(theta);
+    eyeLoc[1] = Math.min(r, 170) * Math.sin(theta);
 
-var setpoint = circle;
-function animate(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(xoffset + eyeLoc[0] + offsets[0], yoffset + eyeLoc[1]+ offsets[1], 60, 0, Math.PI * 2);   
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.fillStyle = "white";  
+    ctx.arc(xoffset + 30 + eyeLoc[0]+ offsets[0], yoffset - 30 + eyeLoc[1]+ offsets[1], 10, 0, Math.PI * 2);
+    ctx.fill();
+    
+}
+var framnum = 0;
+
+function rendersclera(){
+
     ctx.moveTo(points[0].x, points[0].y);
     tension = 1;
     var t = (tension != null) ? tension : 1;
@@ -101,10 +64,8 @@ function animate(){
         var cp2y = p2.y - (p3.y - p1.y) / 6 * t;
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
     }  
-    
+    ctx.fillStyle = "white";
     ctx.fill();
-
-
     for (var i = 0; i < points.length; i++) {
         var point1 = points[i];
         ctx.beginPath();
@@ -112,31 +73,41 @@ function animate(){
         ctx.stroke();
     }
 
+}
+var eyepos = [0, 0];
+function animate(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    rendersclera();
+
+    renderpupil(eyepos[0], eyepos[1], [0,0 ]);
+
+    
+    framnum += 1;
+    // eyeLoc[0] = 100 * Math.sin(framnum/50.0) + 100;
+    // eyeLoc[1] = Math.cos(framnum / 50.0)  + 100;
     points = controller(points, setpoint, kp, kd, states[curstate]['offsets']);
     requestAnimationFrame(animate);
   
 }
-var curstate = 0;
-setInterval(function() {
-    
-    setpoint = blink;
-    kp = 0.6;
-    kd = 0; 
-    setTimeout(function() {
-        setpoint = states[curstate]['state'];
-    }, 100);
-
-}, 1000);
 
 // setInterval(function() {
     
-//     curstate += 1;
-//     curstate %= states.length;
-//     setpoint = states[curstate]['state'];
-//     kp = states[curstate]['gains'][0];
-//     kd = states[curstate]['gains'][0];
-    
+//     setpoint = blink;
+//     kp = 0.6;
+//     kd = 0; 
+//     setTimeout(function() {
+//         setpoint = states[curstate]['state'];
+//     }, 100);
 
 // }, 1000);
+
+setInterval(function() {
+    curstate += 1;
+    curstate %= states.length;
+    setpoint = states[curstate]['state'];
+    kp = states[curstate]['gains'][0];
+    kd = states[curstate]['gains'][0];
+}, 2000);
 
 animate();

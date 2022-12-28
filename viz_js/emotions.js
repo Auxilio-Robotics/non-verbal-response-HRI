@@ -310,8 +310,8 @@ var dilate = [
   ];
 var states = [
     { "state": circle, "gains": [0.2, 0.05], "offsets" : [0, 0]},
-    { "state": dilate, "gains": [0.03, 0.0], "offsets" : [0, 0]},
+    // { "state": dilate, "gains": [0.03, 0.0], "offsets" : [0, 0]},
     // { "state": circle, "gains": [0.2, 0.05], "offsets" : [0, 0]},
     // { "state": happy, "gains": [0.3, 0.5], "offsets" : [0, -10]},
-    // { "state": angry, "gains": [0.3, 0.3], "offsets" : [50, 30]},
+    { "state": angry, "gains": [0.3, 0.3], "offsets" : [50, 30]},
 ];
