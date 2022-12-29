@@ -36,7 +36,6 @@ canvas.addEventListener("mousemove", function (e) {
   // Get the mouse position relative to the canvas
   var mousePos = getMousePos(canvas, e);
   eyepos[1] = Math.atan2((mousePos.y - yoffset),  (mousePos.x - xoffset));
-  // console.log(xoffset, yoffset);
   eyepos[0] = Math.sqrt((mousePos.y - yoffset) ** 2 +   (mousePos.x - xoffset) ** 2);
   // Check if the mouse is down and over a point
   if (isMouseDown && selectedPointIndex >= 0) {
