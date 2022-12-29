@@ -66,12 +66,12 @@ function rendersclera(){
     }  
     ctx.fillStyle = "white";
     ctx.fill();
-    // for (var i = 0; i < points.length; i++) {
-    //     var point1 = points[i];
-    //     ctx.beginPath();
-    //     ctx.arc(point1.x, point1.y, 3, 0, Math.PI * 2);     
-    //     ctx.stroke();
-    // }
+    for (var i = 0; i < points.length; i++) {
+        var point1 = points[i];
+        ctx.beginPath();
+        ctx.arc(point1.x, point1.y, 3, 0, Math.PI * 2);     
+        ctx.stroke();
+    }
 
 }
 var eyepos = [0, 0];
